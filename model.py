@@ -95,7 +95,9 @@ class Event:
             player = game.get_player(self.payload.get("playerID"))
             if player:
                 player.minion_kills += 1
-                player.gold += self.payload.get("goldGranted", 0)
+                gold_granted = self.payload.get("goldGranted", 0)
+                if gold_granted and isinstance(gold_granted, int):
+                    player.gold += gold_granted
         elif self.type == 'PLAYER_KILL':
             killer = game.get_player(self.payload.get("killerID"))
             victim = game.get_player(self.payload.get("victimID"))
@@ -120,16 +122,22 @@ class Event:
             killer = game.get_player(self.payload.get("killerID"))
             if team:
                 team.turret_kills += 1
-                for player in team.players:
-                    player.gold += self.payload.get("teamGoldGranted", 0)
+                team_gold_granted = self.payload.get("teamGoldGranted", 0)
+                if team_gold_granted and isinstance(team_gold_granted, int):
+                    for player in team.players:
+                        player.gold += team_gold_granted
             if killer:
                 killer.turret_destroys += 1
-                killer.gold += self.payload.get("playerGoldGranted", 0)
+                player_gol_granted = self.payload.get("playerGoldGranted", 0)
+                if player_gol_granted and isinstance(player_gol_granted, int):
+                    killer.gold += player_gol_granted
         elif self.type == 'DRAGON_KILL':
             killer = game.get_player(self.payload.get("killerID"))
             if killer:
                 killer.dragon_kills += 1
-                killer.gold += self.payload.get("goldGranted", 0)
+                gold_granted = self.payload.get("goldGranted", 0)
+                if gold_granted and isinstance(gold_granted, int):
+                    killer.gold += gold_granted
         elif self.type == 'MATCH_END':
             team = game.get_team(self.payload.get("winningTeamID"))
             if team:
