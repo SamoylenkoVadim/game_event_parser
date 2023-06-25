@@ -51,6 +51,9 @@ class Game:
         if teamID is None:
             return None
 
+        if not isinstance(teamID, str):
+            return None
+
         if teamID in self._team_cache:
             return self._team_cache[teamID]
 
@@ -63,6 +66,9 @@ class Game:
 
     def get_player(self, playerID):
         if playerID is None:
+            return None
+
+        if not isinstance(playerID, str):
             return None
 
         if playerID in self._player_cache:
