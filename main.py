@@ -51,5 +51,6 @@ def process_events_from_files(directory):
 
     return game
 
-folder_path = "/Users/vadim/workspace/python_coding_challenge_bayes 3/data"
-process_events_from_files(folder_path)
+
+data_folder = os.path.join(os.path.dirname(__file__), 'data')
+process_events_from_files(data_folder)

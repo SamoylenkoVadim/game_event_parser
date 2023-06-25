@@ -2,7 +2,7 @@ import logging
 
 
 class Player:
-    def __init__(self, playerID, gold, name, alive=True):
+    def __init__(self, playerID, name="", gold=0, alive=True):
         self.playerID = playerID
         self.gold = gold
         self.alive = alive
@@ -59,6 +59,8 @@ class Game:
                 self._team_cache[teamID] = team
                 return team
 
+        return None
+
     def get_player(self, playerID):
         if playerID is None:
             return None
@@ -71,6 +73,8 @@ class Game:
                 if player.playerID == playerID:
                     self._player_cache[playerID] = player
                     return player
+
+        return None
 
     def to_dict(self):
         return {
@@ -98,14 +102,19 @@ class Event:
             assistants = self.payload.get("assistants", [])
             if killer:
                 killer.player_kills += 1
-                killer.gold += self.payload.get("goldGranted", 0)
+                gold_granted = self.payload.get("goldGranted", 0)
+                if gold_granted and isinstance(gold_granted, int):
+                    killer.gold += gold_granted
             if victim:
                 victim.alive = False
-            for assistantID in assistants:
-                assistant = game.get_player(assistantID)
-                if assistant:
-                    assistant.assists += 1
-                    assistant.gold += self.payload.get("assistGold", 0)
+            if assistants and isinstance(assistants, list):
+                for assistantID in assistants:
+                    assistant = game.get_player(assistantID)
+                    if assistant:
+                        assistant.assists += 1
+                        assist_gold = self.payload.get("assistGold", 0)
+                        if assist_gold and isinstance(assist_gold, int):
+                            assistant.gold += assist_gold
         elif self.type == 'TURRET_DESTROY':
             team = game.get_team(self.payload.get("killerTeamID"))
             killer = game.get_player(self.payload.get("killerID"))
