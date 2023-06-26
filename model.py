@@ -96,7 +96,7 @@ class Event:
         self.type = event_type
         self.payload = payload
 
-    def apply(self, game):
+    def apply(self, game, log_info=None):
         if self.type == 'MINION_KILL':
             player = game.get_player(self.payload.get("playerID"))
             if player:
@@ -149,4 +149,4 @@ class Event:
             if team:
                 game.winning_team = team
         else:
-            logging.error("Unknown event type")
+            logging.error("File {}: UNKNOWN EVENT TYPE".format(log_info))

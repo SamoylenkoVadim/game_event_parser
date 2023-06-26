@@ -2,27 +2,37 @@ import json
 import logging
 import os
 import pprint
-
 from model import Game, Team, Event, Player
+
+logging.getLogger().setLevel(logging.WARNING)
 
 
 def process_events_from_files(directory):
     logging.info("Started")
-    events_json = []
+    events_json = {}
 
     for filename in os.listdir(directory):
         if filename.endswith('.json'):
             try:
                 with open(os.path.join(directory, filename), 'r') as f:
                     event = json.load(f)
-                    events_json.append(event)
+                    events_json[filename] = event
             except ValueError:
                 logging.error("Invalid JSON: {}".format(filename))
             except Exception as error:
                 logging.error(error)
 
-    match_start_event = next((event for event in events_json if event['type'] == 'MATCH_START'), None)
-    match_end_event = next((event for event in events_json if event['type'] == 'MATCH_END'), None)
+    events_to_remove = []
+    match_start_event = None
+    match_end_event = None
+
+    for filename, event in events_json.items():
+        if event.get('type') == 'MATCH_START':
+            match_start_event = event
+            events_to_remove.append(filename)
+        elif event.get('type') == 'MATCH_END':
+            match_end_event = event
+            events_to_remove.append(filename)
 
     if match_start_event is None:
         raise Exception("No 'MATCH_START' event found.")
@@ -30,20 +40,22 @@ def process_events_from_files(directory):
     if match_end_event is None:
         raise Exception("No 'MATCH_END' event found.")
 
-    events_json.remove(match_start_event)
-    events_json.remove(match_end_event)
+    for filename in events_to_remove:
+        del events_json[filename]
 
+    teams = match_start_event.get('payload', {}).get('teams', [])
     game = Game(
-        match_start_event['matchID'],
-        match_start_event['payload']['fixture'],
-        [Team(team['teamID'], [Player(**player) for player in team['players']]) for team in match_start_event['payload']['teams']]
+        match_start_event.get('matchID'),
+        match_start_event.get('payload', {}).get('fixture', {}),
+        [Team(team.get('teamID'), [Player(**player) for player in team.get('players', [])]) for team in teams]
     )
 
-    for event_json in events_json:
-        event = Event(event_json['type'], event_json['payload'])
-        event.apply(game)
+    for filename, event_json in events_json.items():
+        logging.info("Processing file: {}".format(filename))
+        event = Event(event_json.get('type', "UNKNOWN"), event_json.get('payload', {}))
+        event.apply(game, filename)
 
-    match_end_event = Event(match_end_event['type'], match_end_event['payload'])
+    match_end_event = Event(match_end_event.get('type'), match_end_event.get('payload'))
     match_end_event.apply(game)
     logging.info("Completed")
 
